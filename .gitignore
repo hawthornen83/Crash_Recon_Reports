@@ -36,3 +36,4 @@ Thumbs.db
 exports/
 *.log
 assets/
+.idea/workspace.xml
