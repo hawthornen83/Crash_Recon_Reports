@@ -36,6 +36,9 @@ INCIDENT_TYPES = [
     "Traffic Fatality",
     "Single Vehicle",
     "Non-Injury",
+    "Hit and Run",
+    "Property Damage Only",
+    "Other",
 ]
 
 OFFICER_RANKS = [
@@ -44,4 +47,66 @@ OFFICER_RANKS = [
     "Sgt",
     "Chief",
     "Reconstructionist",
+]
+
+COLLISION_TYPES = [
+    "Angle",
+    "Head-On",
+    "Rear-End",
+    "Sideswipe (Same Direction)",
+    "Sideswipe (Opposite Direction)",
+    "Rollover",
+    "Fixed Object",
+    "Pedestrian",
+    "Cyclist",
+    "Animal",
+    "Other",
+]
+
+WEATHER_CONDITIONS = [
+    "Clear",
+    "Cloudy",
+    "Rain",
+    "Heavy Rain",
+    "Fog / Smoke",
+    "Snow",
+    "Sleet / Freezing Rain",
+    "Blowing Snow",
+    "Severe Crosswinds",
+    "Unknown",
+]
+
+LIGHTING_CONDITIONS = [
+    "Daylight",
+    "Dawn",
+    "Dusk",
+    "Dark - Lighted",
+    "Dark - Not Lighted",
+    "Dark - Unknown Lighting",
+    "Unknown",
+]
+
+SURFACE_CONDITIONS = [
+    "Dry",
+    "Wet",
+    "Snow",
+    "Ice / Frost",
+    "Slush",
+    "Mud / Dirt / Gravel",
+    "Oil",
+    "Unknown",
+]
+
+TRAFFIC_CONTROL_TYPES = [
+    "None",
+    "Traffic Signal",
+    "Stop Sign",
+    "Yield Sign",
+    "Flashing Signal",
+    "Railroad Crossing Signal",
+    "School Zone",
+    "Officer / Flagger",
+    "No Passing Zone",
+    "Other",
+    "Unknown",
 ]

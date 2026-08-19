@@ -5,9 +5,15 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from docx import Document
 
-from constants import INCIDENT_TYPES, OFFICER_RANKS
+from constants import (
+    INCIDENT_TYPES, OFFICER_RANKS, COLLISION_TYPES,
+    WEATHER_CONDITIONS, LIGHTING_CONDITIONS, SURFACE_CONDITIONS,
+    TRAFFIC_CONTROL_TYPES
+)
 from dialogs import PersonDialog, VehicleDialog
+from impact_diagram import ImpactDiagram
 from models import InvolvedPerson, Vehicle
+from scale_diagram import ScaleDiagramEditor
 
 
 ctk.set_appearance_mode("dark")
@@ -23,6 +29,7 @@ class CrashReconReportApp(ctk.CTk):
 
         self.vehicles: List[Vehicle] = []
         self.involved_people: List[InvolvedPerson] = []
+        self.scale_editor: Optional[ScaleDiagramEditor] = None
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -51,82 +58,97 @@ class CrashReconReportApp(ctk.CTk):
         self.update_preview()
 
     def _build_input(self):
-        ctk.CTkLabel(self.input_panel, text="Crash Reconstruction Report", font=ctk.CTkFont(size=30, weight="bold"), anchor="w").grid(
-            row=0, column=0, sticky="ew", padx=10, pady=(10, 18)
-        )
+        ctk.CTkLabel(self.input_panel, text="Crash Reconstruction Report",
+                     font=ctk.CTkFont(size=30, weight="bold"), anchor="w").grid(
+            row=0, column=0, sticky="ew", padx=10, pady=(10, 18))
 
         self._section_title("Case Information", 1)
-        self.fields["case_number"] = self.add_field("Case Number", 2)
-        self.fields["report_date"] = self.add_field("Report Date", 3)
-        self.fields["crash_date"] = self.add_field("Crash Date", 4)
-        self.fields["crash_time"] = self.add_field("Crash Time (24hr)", 5)
-        self.fields["incident_type"] = self.add_dropdown("Incident Type", 6, INCIDENT_TYPES)
-        self.fields["location"] = self.add_field("Crash Location", 7)
-        self.fields["county"] = self.add_field("County", 8)
-        self.fields["city"] = self.add_field("City", 9)
-        self.fields["agency"] = self.add_field("Agency", 10)
-        self.fields["officer"] = self.add_field("Investigating Officer", 11)
-        self.fields["badge"] = self.add_field("Badge / Serial Number", 12)
+        self.fields["case_number"]  = self.add_field("Case Number", 2)
+        self.fields["report_date"]  = self.add_field("Report Date", 3)
+        self.fields["crash_date"]   = self.add_field("Crash Date", 4)
+        self.fields["crash_time"]   = self.add_field("Crash Time (24hr)", 5)
+        self.fields["incident_type"]= self.add_dropdown("Incident Type", 6, INCIDENT_TYPES)
+        self.fields["location"]     = self.add_field("Crash Location", 7)
+        self.fields["county"]       = self.add_field("County", 8)
+        self.fields["city"]         = self.add_field("City", 9)
+        self.fields["agency"]       = self.add_field("Agency", 10)
+        self.fields["officer"]      = self.add_field("Investigating Officer", 11)
+        self.fields["badge"]        = self.add_field("Badge / Serial Number", 12)
         self.fields["officer_rank"] = self.add_dropdown("Officer Rank", 13, OFFICER_RANKS)
 
         self._section_title("Crash Details", 14)
-        self.fields["collision_type"] = self.add_field("Collision Type", 15)
-        self.fields["roadway"] = self.add_field("Roadway / Route", 16)
-        self.fields["weather"] = self.add_field("Weather", 17)
-        self.fields["lighting"] = self.add_field("Lighting Conditions", 18)
-        self.fields["surface"] = self.add_field("Surface Condition", 19)
-        self.fields["speed_limit"] = self.add_field("Speed Limit", 20)
-        self.fields["traffic_control"] = self.add_field("Traffic Control", 21)
-        self.fields["point_of_impact"] = self.add_field("Point of Impact", 22)
+        self.fields["collision_type"]  = self.add_dropdown("Collision Type", 15, COLLISION_TYPES)
+        self.fields["roadway"]         = self.add_field("Roadway / Route", 16)
+        self.fields["weather"]         = self.add_dropdown("Weather", 17, WEATHER_CONDITIONS)
+        self.fields["lighting"]        = self.add_dropdown("Lighting Conditions", 18, LIGHTING_CONDITIONS)
+        self.fields["surface"]         = self.add_dropdown("Surface Condition", 19, SURFACE_CONDITIONS)
+        self.fields["speed_limit"]     = self.add_field("Speed Limit", 20)
+        self.fields["traffic_control"] = self.add_dropdown("Traffic Control", 21, TRAFFIC_CONTROL_TYPES)
+
+        self.fields["point_of_impact"] = ImpactDiagram(self.input_panel, command=self.update_preview)
+        self.fields["point_of_impact"].grid(row=22, column=0, sticky="ew", padx=10, pady=(0, 8))
+
         self.fields["scene_desc"] = self.add_field("Scene Description", 23)
 
-        self._section_title("Vehicles", 24)
+        self._section_title("Scale Diagram", 24)
+        ctk.CTkButton(self.input_panel, text="Open Scale Diagram Editor",
+                      height=36, command=self.open_scale_diagram).grid(
+            row=25, column=0, sticky="ew", padx=10, pady=(0, 10))
+
+        self._section_title("Vehicles", 26)
         vehicle_row = ctk.CTkFrame(self.input_panel, fg_color="transparent")
-        vehicle_row.grid(row=25, column=0, sticky="ew", padx=10, pady=(0, 8))
+        vehicle_row.grid(row=27, column=0, sticky="ew", padx=10, pady=(0, 8))
         for col in (0, 1, 2):
             vehicle_row.grid_columnconfigure(col, weight=1)
 
-        ctk.CTkButton(vehicle_row, text="Add Vehicle", command=self.add_vehicle).grid(row=0, column=0, padx=6, sticky="ew")
-        ctk.CTkButton(vehicle_row, text="Edit Vehicle", command=self.edit_vehicle).grid(row=0, column=1, padx=6, sticky="ew")
+        ctk.CTkButton(vehicle_row, text="Add Vehicle",    command=self.add_vehicle).grid(row=0, column=0, padx=6, sticky="ew")
+        ctk.CTkButton(vehicle_row, text="Edit Vehicle",   command=self.edit_vehicle).grid(row=0, column=1, padx=6, sticky="ew")
         ctk.CTkButton(vehicle_row, text="Delete Vehicle", command=self.delete_vehicle).grid(row=0, column=2, padx=6, sticky="ew")
 
         list_frame = ctk.CTkFrame(self.input_panel, fg_color="transparent")
-        list_frame.grid(row=26, column=0, sticky="ew", padx=10, pady=(0, 10))
+        list_frame.grid(row=28, column=0, sticky="ew", padx=10, pady=(0, 10))
         list_frame.grid_columnconfigure(0, weight=1)
         self.vehicle_listbox = tk.Listbox(list_frame, height=6, exportselection=False)
         self.vehicle_listbox.grid(row=0, column=0, sticky="ew")
 
-        self._section_title("Involved Person", 27)
+        self._section_title("Involved Person", 29)
         people_row = ctk.CTkFrame(self.input_panel, fg_color="transparent")
-        people_row.grid(row=28, column=0, sticky="ew", padx=10, pady=(0, 8))
+        people_row.grid(row=30, column=0, sticky="ew", padx=10, pady=(0, 8))
         for col in (0, 1, 2):
             people_row.grid_columnconfigure(col, weight=1)
 
-        ctk.CTkButton(people_row, text="Add Person", command=self.add_person).grid(row=0, column=0, padx=6, sticky="ew")
-        ctk.CTkButton(people_row, text="Edit Person", command=self.edit_person).grid(row=0, column=1, padx=6, sticky="ew")
+        ctk.CTkButton(people_row, text="Add Person",    command=self.add_person).grid(row=0, column=0, padx=6, sticky="ew")
+        ctk.CTkButton(people_row, text="Edit Person",   command=self.edit_person).grid(row=0, column=1, padx=6, sticky="ew")
         ctk.CTkButton(people_row, text="Delete Person", command=self.delete_person).grid(row=0, column=2, padx=6, sticky="ew")
 
         ppl_frame = ctk.CTkFrame(self.input_panel, fg_color="transparent")
-        ppl_frame.grid(row=29, column=0, sticky="ew", padx=10, pady=(0, 10))
+        ppl_frame.grid(row=31, column=0, sticky="ew", padx=10, pady=(0, 10))
         ppl_frame.grid_columnconfigure(0, weight=1)
         self.people_listbox = tk.Listbox(ppl_frame, height=6, exportselection=False)
         self.people_listbox.grid(row=0, column=0, sticky="ew")
 
-        self._section_title("Narrative / Reconstruction Findings", 30)
+        self._section_title("Narrative / Reconstruction Findings", 32)
         self.fields["narrative"] = ctk.CTkTextbox(self.input_panel, height=220, corner_radius=10, border_width=1)
-        self.fields["narrative"].grid(row=31, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        self.fields["narrative"].grid(row=33, column=0, sticky="nsew", padx=10, pady=(0, 10))
+
+    def open_scale_diagram(self):
+        if self.scale_editor is None or not self.scale_editor.winfo_exists():
+            self.scale_editor = ScaleDiagramEditor(self)
+        else:
+            self.scale_editor.present()
 
     def _build_preview(self):
-        ctk.CTkLabel(self.preview_panel, text="Live Final Report", font=ctk.CTkFont(size=24, weight="bold"), anchor="w").grid(
-            row=0, column=0, sticky="ew", padx=10, pady=(10, 10)
-        )
-        self.preview_text = ctk.CTkTextbox(self.preview_panel, height=800, width=620, corner_radius=10, border_width=1)
+        ctk.CTkLabel(self.preview_panel, text="Live Final Report",
+                     font=ctk.CTkFont(size=24, weight="bold"), anchor="w").grid(
+            row=0, column=0, sticky="ew", padx=10, pady=(10, 10))
+        self.preview_text = ctk.CTkTextbox(self.preview_panel, height=800, width=620,
+                                            corner_radius=10, border_width=1)
         self.preview_text.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
         self.preview_text.configure(state="disabled")
 
         export_row = ctk.CTkFrame(self.preview_panel, fg_color="transparent")
         export_row.grid(row=2, column=0, sticky="ew", padx=10, pady=(0, 10))
-        ctk.CTkButton(export_row, text="Export .txt", command=self.export_txt).pack(side="left", padx=(0, 8))
+        ctk.CTkButton(export_row, text="Export .txt",  command=self.export_txt).pack(side="left", padx=(0, 8))
         ctk.CTkButton(export_row, text="Export .docx", command=self.export_docx).pack(side="left")
 
     def _set_defaults(self):
@@ -142,14 +164,13 @@ class CrashReconReportApp(ctk.CTk):
         self.fields["officer"].insert(0, "N. Hawthorne")
         self.fields["badge"].insert(0, "W147")
         self.fields["officer_rank"].set("Officer")
-        self.fields["collision_type"].insert(0, "Angle Collision")
+        self.fields["collision_type"].set("Angle")
         self.fields["roadway"].insert(0, "Highway 275")
-        self.fields["weather"].insert(0, "Clear")
-        self.fields["lighting"].insert(0, "Daylight")
-        self.fields["surface"].insert(0, "Dry Asphalt")
+        self.fields["weather"].set("Clear")
+        self.fields["lighting"].set("Daylight")
+        self.fields["surface"].set("Dry")
         self.fields["speed_limit"].insert(0, "45 MPH")
-        self.fields["traffic_control"].insert(0, "Traffic Signal")
-        self.fields["point_of_impact"].insert(0, "Front-left / Front-right")
+        self.fields["traffic_control"].set("Traffic Signal")
         self.fields["scene_desc"].insert(0, "Dry roadway, no debris field, moderate skid marks, clear sightlines.")
         self.fields["narrative"].insert("0.0", "Enter reconstruction narrative here.")
 
@@ -161,15 +182,16 @@ class CrashReconReportApp(ctk.CTk):
                 widget.bind("<KeyRelease>", lambda _e: self.update_preview())
 
     def _section_title(self, text: str, row: int):
-        ctk.CTkLabel(self.input_panel, text=text, font=ctk.CTkFont(size=18, weight="bold"), anchor="w").grid(
-            row=row, column=0, sticky="ew", padx=10, pady=(14, 8)
-        )
+        ctk.CTkLabel(self.input_panel, text=text,
+                     font=ctk.CTkFont(size=18, weight="bold"), anchor="w").grid(
+            row=row, column=0, sticky="ew", padx=10, pady=(14, 8))
 
     def add_field(self, label_text: str, row: int):
         frame = ctk.CTkFrame(self.input_panel, corner_radius=10, fg_color="transparent")
         frame.grid(row=row, column=0, sticky="ew", padx=10, pady=(0, 8))
         frame.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(frame, text=label_text, anchor="w").grid(row=0, column=0, sticky="ew", padx=2, pady=(0, 4))
+        ctk.CTkLabel(frame, text=label_text, anchor="w").grid(
+            row=0, column=0, sticky="ew", padx=2, pady=(0, 4))
         entry = ctk.CTkEntry(frame, width=420, height=32)
         entry.grid(row=1, column=0, sticky="ew", padx=2)
         return entry
@@ -178,7 +200,8 @@ class CrashReconReportApp(ctk.CTk):
         frame = ctk.CTkFrame(self.input_panel, corner_radius=10, fg_color="transparent")
         frame.grid(row=row, column=0, sticky="ew", padx=10, pady=(0, 8))
         frame.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(frame, text=label_text, anchor="w").grid(row=0, column=0, sticky="ew", padx=2, pady=(0, 4))
+        ctk.CTkLabel(frame, text=label_text, anchor="w").grid(
+            row=0, column=0, sticky="ew", padx=2, pady=(0, 4))
         menu = ctk.CTkOptionMenu(frame, values=values, width=420)
         menu.grid(row=1, column=0, sticky="ew", padx=2)
         menu.configure(command=lambda *_: self.update_preview())
@@ -270,6 +293,11 @@ class CrashReconReportApp(ctk.CTk):
             val = str(val).strip()
             return val if val else default
 
+        diagram_summary = "Not created"
+        if self.scale_editor and self.scale_editor.winfo_exists() and self.scale_editor.objects:
+            n = len(self.scale_editor.objects)
+            diagram_summary = f"{n} object(s) plotted — see exported diagram"
+
         report = f"""
 CRASH RECONSTRUCTION REPORT
 
@@ -294,8 +322,9 @@ Lighting Conditions: {get_value("lighting")}
 Surface Condition: {get_value("surface")}
 Speed Limit: {get_value("speed_limit")}
 Traffic Control: {get_value("traffic_control")}
-Point of Impact: {get_value("point_of_impact")}
+Area of Impact: {get_value("point_of_impact")}
 Scene Description: {get_value("scene_desc")}
+Scale Diagram: {diagram_summary}
 
 Vehicle Information:
 """
@@ -304,18 +333,19 @@ Vehicle Information:
             for idx, v in enumerate(self.vehicles, start=1):
                 owner_addr = ", ".join(part for part in [v.owner_street, v.owner_city, v.owner_state, v.owner_zip] if part)
                 report += f"""
-Vehicle {idx}
-- Year / Make / Model: {v.year} {v.make} {v.model}
-- Color: {v.color}
-- Plate #: {v.plate}
-- VIN: {v.vin}
-- Owner: {v.owner_name}
-- Owner Address: {owner_addr or 'N/A'}
-- Insurance Company: {v.insurance_company}
-- Policy Number: {v.policy_number}
-- Phone: {v.phone_number}
-- Notes: {v.notes or 'None'}
-"""
+                Vehicle {idx}
+                - Year / Make / Model: {v.year} {v.make} {v.model}
+                - Color: {v.color}
+                - Plate #: {v.plate}
+                - VIN: {v.vin}
+                - Impact Area: {v.impact_area}
+                - Owner: {v.owner_name}
+                - Owner Address: {owner_addr or 'N/A'}
+                - Insurance Company: {v.insurance_company}
+                - Policy Number: {v.policy_number}
+                - Phone: {v.phone_number}
+                - Notes: {v.notes or 'None'}
+                """
                 if v.occupants:
                     report += "Occupants:\n"
                     for i, occ in enumerate(v.occupants, start=1):

@@ -1,6 +1,7 @@
 import tkinter as tk
 from copy import deepcopy
 from typing import List, Optional
+from impact_diagram import ImpactDiagram
 
 import customtkinter as ctk
 from tkinter import messagebox
@@ -14,15 +15,20 @@ class OccupantDialog(ctk.CTkToplevel):
         super().__init__(parent)
         self.title("Occupant")
         self.geometry("640x800")
-        self.resizable(False, False)
+        self.resizable(True, True)
         self.transient(parent)
         self.grab_set()
 
         self.result: Optional[Occupant] = None
         data = deepcopy(occupant) if occupant else Occupant()
 
+        self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
+
+        self.scroll = ctk.CTkScrollableFrame(self, corner_radius=0)
+        self.scroll.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        self.scroll.grid_columnconfigure(0, weight=1)
+        self.scroll.grid_columnconfigure(1, weight=1)
 
         self.entries = {}
         row = 0
@@ -45,43 +51,43 @@ class OccupantDialog(ctk.CTkToplevel):
         ]
 
         for label_text, key in text_fields:
-            ctk.CTkLabel(self, text=label_text, anchor="w").grid(
+            ctk.CTkLabel(self.scroll, text=label_text, anchor="w").grid(
                 row=row, column=0, padx=12, pady=(8, 4), sticky="ew"
             )
-            entry = ctk.CTkEntry(self, height=32)
+            entry = ctk.CTkEntry(self.scroll, height=32)
             entry.grid(row=row, column=1, padx=12, pady=(8, 4), sticky="ew")
             entry.insert(0, getattr(data, key))
             self.entries[key] = entry
             row += 1
 
-        ctk.CTkLabel(self, text="Role / Relation", anchor="w").grid(
+        ctk.CTkLabel(self.scroll, text="Role / Relation", anchor="w").grid(
             row=row, column=0, padx=12, pady=(8, 4), sticky="ew"
         )
         self.relation_var = tk.StringVar(
             value=data.relation_to_vehicle if data.relation_to_vehicle else "Passenger"
         )
-        self.relation_menu = ctk.CTkOptionMenu(self, values=RELATION_TYPES, variable=self.relation_var)
+        self.relation_menu = ctk.CTkOptionMenu(self.scroll, values=RELATION_TYPES, variable=self.relation_var)
         self.relation_menu.grid(row=row, column=1, padx=12, pady=(8, 4), sticky="ew")
         row += 1
 
-        ctk.CTkLabel(self, text="Seat Position", anchor="w").grid(
+        ctk.CTkLabel(self.scroll, text="Seat Position", anchor="w").grid(
             row=row, column=0, padx=12, pady=(8, 4), sticky="ew"
         )
         seat_default = data.seat_location if data.seat_location in SEAT_POSITIONS else "Unknown"
         self.seat_var = tk.StringVar(value=seat_default)
-        self.seat_menu = ctk.CTkOptionMenu(self, values=SEAT_POSITIONS, variable=self.seat_var)
+        self.seat_menu = ctk.CTkOptionMenu(self.scroll, values=SEAT_POSITIONS, variable=self.seat_var)
         self.seat_menu.grid(row=row, column=1, padx=12, pady=(8, 4), sticky="ew")
         row += 1
 
-        ctk.CTkLabel(self, text="Died?", anchor="w").grid(
+        ctk.CTkLabel(self.scroll, text="Died?", anchor="w").grid(
             row=row, column=0, padx=12, pady=(8, 4), sticky="ew"
         )
         self.died_var = tk.StringVar(value="Yes" if data.died else "No")
-        self.died_menu = ctk.CTkOptionMenu(self, values=["No", "Yes"], variable=self.died_var)
+        self.died_menu = ctk.CTkOptionMenu(self.scroll, values=["No", "Yes"], variable=self.died_var)
         self.died_menu.grid(row=row, column=1, padx=12, pady=(8, 4), sticky="ew")
         row += 1
 
-        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        btn_frame = ctk.CTkFrame(self.scroll, fg_color="transparent")
         btn_frame.grid(row=row, column=0, columnspan=2, sticky="ew", padx=12, pady=16)
         btn_frame.grid_columnconfigure(0, weight=1)
         btn_frame.grid_columnconfigure(1, weight=1)
@@ -123,15 +129,20 @@ class VehicleDialog(ctk.CTkToplevel):
         super().__init__(parent)
         self.title("Vehicle")
         self.geometry("700x930")
-        self.resizable(False, False)
+        self.resizable(True, True)
         self.transient(parent)
         self.grab_set()
 
         self.result: Optional[Vehicle] = None
         self.vehicle = deepcopy(vehicle) if vehicle else Vehicle()
 
+        self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
+
+        self.scroll = ctk.CTkScrollableFrame(self, corner_radius=0)
+        self.scroll.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        self.scroll.grid_columnconfigure(0, weight=1)
+        self.scroll.grid_columnconfigure(1, weight=1)
 
         self.entries = {}
 
@@ -155,25 +166,38 @@ class VehicleDialog(ctk.CTkToplevel):
 
         row = 0
         for label_text, key in fields:
-            ctk.CTkLabel(self, text=label_text, anchor="w").grid(
+            ctk.CTkLabel(self.scroll, text=label_text, anchor="w").grid(
                 row=row, column=0, padx=12, pady=(8, 4), sticky="ew"
             )
-            entry = ctk.CTkEntry(self, height=32)
+            entry = ctk.CTkEntry(self.scroll, height=32)
             entry.grid(row=row, column=1, padx=12, pady=(8, 4), sticky="ew")
             entry.insert(0, getattr(self.vehicle, key))
             self.entries[key] = entry
             row += 1
 
-        ctk.CTkLabel(self, text="Occupants", font=ctk.CTkFont(size=18, weight="bold"), anchor="w").grid(
+        ctk.CTkLabel(
+            self.scroll,
+            text="Impact Area",
+            font=ctk.CTkFont(size=18, weight="bold"),
+            anchor="w"
+        ).grid(row=row, column=0, columnspan=2, sticky="ew", padx=12, pady=(12, 6))
+        row += 1
+
+        self.impact_diagram = ImpactDiagram(self.scroll)
+        self.impact_diagram.grid(row=row, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 12))
+        self.impact_diagram.set(self.vehicle.impact_area)
+        row += 1
+
+        ctk.CTkLabel(self.scroll, text="Occupants", font=ctk.CTkFont(size=18, weight="bold"), anchor="w").grid(
             row=row, column=0, columnspan=2, sticky="ew", padx=12, pady=(12, 6)
         )
         row += 1
 
-        self.occupant_listbox = tk.Listbox(self, height=8, exportselection=False)
+        self.occupant_listbox = tk.Listbox(self.scroll, height=8, exportselection=False)
         self.occupant_listbox.grid(row=row, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 8))
         row += 1
 
-        btn_row = ctk.CTkFrame(self, fg_color="transparent")
+        btn_row = ctk.CTkFrame(self.scroll, fg_color="transparent")
         btn_row.grid(row=row, column=0, columnspan=2, sticky="ew", padx=12, pady=(0, 8))
         btn_row.grid_columnconfigure(0, weight=1)
         btn_row.grid_columnconfigure(1, weight=1)
@@ -184,7 +208,7 @@ class VehicleDialog(ctk.CTkToplevel):
         ctk.CTkButton(btn_row, text="Delete Occupant", command=self.delete_occupant).grid(row=0, column=2, padx=8, sticky="ew")
         row += 1
 
-        action_row = ctk.CTkFrame(self, fg_color="transparent")
+        action_row = ctk.CTkFrame(self.scroll, fg_color="transparent")
         action_row.grid(row=row, column=0, columnspan=2, sticky="ew", padx=12, pady=12)
         action_row.grid_columnconfigure(0, weight=1)
         action_row.grid_columnconfigure(1, weight=1)
@@ -249,6 +273,7 @@ class VehicleDialog(ctk.CTkToplevel):
             policy_number=self.entries["policy_number"].get().strip(),
             phone_number=self.entries["phone_number"].get().strip(),
             notes=self.entries["notes"].get().strip(),
+            impact_area=self.impact_diagram.get(),
             occupants=deepcopy(self.vehicle.occupants),
         )
 
@@ -265,22 +290,27 @@ class PersonDialog(ctk.CTkToplevel):
         super().__init__(parent)
         self.title("Involved Person")
         self.geometry("640x800")
-        self.resizable(False, False)
+        self.resizable(True, True)
         self.transient(parent)
         self.grab_set()
 
         self.result: Optional[InvolvedPerson] = None
         data = deepcopy(person) if person else InvolvedPerson()
 
+        self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
+
+        self.scroll = ctk.CTkScrollableFrame(self, corner_radius=0)
+        self.scroll.grid(row=0, column=0, sticky="nsew", padx=12, pady=12)
+        self.scroll.grid_columnconfigure(0, weight=1)
+        self.scroll.grid_columnconfigure(1, weight=1)
 
         self.entries = {}
         row = 0
 
-        ctk.CTkLabel(self, text="Involvement Type", anchor="w").grid(row=row, column=0, padx=12, pady=(10, 4), sticky="ew")
+        ctk.CTkLabel(self.scroll, text="Involvement Type", anchor="w").grid(row=row, column=0, padx=12, pady=(10, 4), sticky="ew")
         self.type_var = tk.StringVar(value=data.involvement_type or "Driver")
-        ctk.CTkOptionMenu(self, values=INVOLVEMENT_TYPES, variable=self.type_var).grid(
+        ctk.CTkOptionMenu(self.scroll, values=INVOLVEMENT_TYPES, variable=self.type_var).grid(
             row=row, column=1, padx=12, pady=(10, 4), sticky="ew"
         )
         row += 1
@@ -302,31 +332,31 @@ class PersonDialog(ctk.CTkToplevel):
         ]
 
         for label_text, key in fields:
-            ctk.CTkLabel(self, text=label_text, anchor="w").grid(row=row, column=0, padx=12, pady=(8, 4), sticky="ew")
-            entry = ctk.CTkEntry(self, height=32)
+            ctk.CTkLabel(self.scroll, text=label_text, anchor="w").grid(row=row, column=0, padx=12, pady=(8, 4), sticky="ew")
+            entry = ctk.CTkEntry(self.scroll, height=32)
             entry.grid(row=row, column=1, padx=12, pady=(8, 4), sticky="ew")
             entry.insert(0, getattr(data, key))
             self.entries[key] = entry
             row += 1
 
-        ctk.CTkLabel(self, text="Died?", anchor="w").grid(row=row, column=0, padx=12, pady=(8, 4), sticky="ew")
+        ctk.CTkLabel(self.scroll, text="Died?", anchor="w").grid(row=row, column=0, padx=12, pady=(8, 4), sticky="ew")
         self.died_var = tk.StringVar(value="Yes" if data.died else "No")
-        ctk.CTkOptionMenu(self, values=["No", "Yes"], variable=self.died_var).grid(
+        ctk.CTkOptionMenu(self.scroll, values=["No", "Yes"], variable=self.died_var).grid(
             row=row, column=1, padx=12, pady=(8, 4), sticky="ew"
         )
         row += 1
 
-        ctk.CTkLabel(self, text="Related Vehicle", anchor="w").grid(row=row, column=0, padx=12, pady=(8, 4), sticky="ew")
+        ctk.CTkLabel(self.scroll, text="Related Vehicle", anchor="w").grid(row=row, column=0, padx=12, pady=(8, 4), sticky="ew")
         options = ["None"] + (vehicle_options or [])
         if data.related_vehicle and data.related_vehicle not in options:
             options.append(data.related_vehicle)
         self.vehicle_var = tk.StringVar(value=data.related_vehicle or "None")
-        ctk.CTkOptionMenu(self, values=options, variable=self.vehicle_var).grid(
+        ctk.CTkOptionMenu(self.scroll, values=options, variable=self.vehicle_var).grid(
             row=row, column=1, padx=12, pady=(8, 4), sticky="ew"
         )
         row += 1
 
-        btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        btn_frame = ctk.CTkFrame(self.scroll, fg_color="transparent")
         btn_frame.grid(row=row, column=0, columnspan=2, sticky="ew", padx=12, pady=16)
         btn_frame.grid_columnconfigure(0, weight=1)
         btn_frame.grid_columnconfigure(1, weight=1)

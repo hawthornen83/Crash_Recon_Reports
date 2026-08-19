@@ -40,6 +40,7 @@ class Vehicle:
     policy_number: str = ""
     phone_number: str = ""
     notes: str = ""
+    impact_area: str = "Not specified"
     occupants: List[Occupant] = field(default_factory=list)
 
 
